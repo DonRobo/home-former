@@ -1,13 +1,13 @@
 package at.robert
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import kotlin.reflect.KProperty
 
 data class Change(
     val path: List<String>,
-    val oldValue: Any?,
-    val newValue: Any?,
+    val oldValue: JsonNode?,
+    val newValue: JsonNode?,
 ) {
     override fun toString(): String {
         val operation = when {
@@ -16,15 +16,10 @@ data class Change(
             else -> "~"
         }
         val path = path.joinToString(".")
-        fun Any?.diffToString() = when (this) {
-            null -> "null"
-            is String -> "\"$this\""
-            else -> this.toString()
-        }
         return when (operation) {
-            "+" -> "$operation$path=${newValue.diffToString()}"
-            "-" -> "$operation$path=${oldValue.diffToString()}"
-            "~" -> "$operation$path=${newValue.diffToString()} (was ${oldValue.diffToString()})"
+            "+" -> "$operation$path=${newValue}"
+            "-" -> "$operation$path=${oldValue}"
+            "~" -> "$operation$path=${newValue} (was ${oldValue})"
             else -> error("Unreachable")
         }
     }
@@ -37,33 +32,36 @@ data class Diff(
 fun <T : Any> diff(old: T?, new: T?, path: List<String> = emptyList()): Diff {
     if (old == new) return Diff(emptyList())
 
-    val simplifiedOld = simplify(old)
-    val simplifiedNew = simplify(new)
+    val oldJson = jsonObjectMapper.valueToTree<JsonNode>(old)
+    val newJson = jsonObjectMapper.valueToTree<JsonNode>(new)
 
-    if (simplifiedOld != null && simplifiedNew != null) {
-        require(simplifiedOld::class.java == simplifiedNew::class.java) {
-            "Can't diff $simplifiedOld and $simplifiedNew, different types"
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST") // lots of casting, but the previous checks should make them safe
     return when {
-        simplifiedOld == simplifiedNew -> Diff(emptyList())
-        simplifiedOld == null -> Diff(listOf(Change(path, null, simplifiedNew)))
-        simplifiedNew == null -> Diff(listOf(Change(path, simplifiedOld, null)))
-        else -> when (simplifiedOld) {
-            is List<*> -> diffList(simplifiedOld as List<Any?>, simplifiedNew as List<Any?>, path)
-            is Set<*> -> diffSet(simplifiedOld as Set<Any?>, simplifiedNew as Set<Any?>, path)
-            is Map<*, *> -> diffMap(simplifiedOld as Map<Any?, Any?>, simplifiedNew as Map<Any?, Any?>, path)
-            else -> Diff(
-                listOf(Change(path, simplifiedOld, simplifiedNew))
-            )
-        }
+        oldJson == newJson -> Diff(emptyList())
+        oldJson.isNull -> Diff(listOf(Change(path, null, newJson)))
+        newJson.isNull -> Diff(listOf(Change(path, oldJson, null)))
+        else -> Diff(jsonDiff(oldJson, newJson, path))
     }
 }
 
-private fun diffList(old: List<Any?>, new: List<Any?>, path: List<String>): Diff {
-    val indices = 0 until maxOf(old.size, new.size)
+fun jsonDiff(old: JsonNode, new: JsonNode, path: List<String>): List<Change> {
+    if (old.javaClass != new.javaClass) {
+        return listOf(Change(path, old, new))
+    }
+
+    return when (old) {
+        is ObjectNode -> diffObject(old, new as ObjectNode, path).changes
+        is ArrayNode -> diffArray(old, new as ArrayNode, path).changes
+        else -> return listOf(Change(path, old, new))
+
+    }
+}
+
+private fun diffArray(old: ArrayNode, new: ArrayNode, path: List<String>): Diff {
+    val indices = 0 until maxOf(old.size(), new.size())
+    fun ArrayNode.getOrNull(index: Int): JsonNode? {
+        return if (index in 0 until size()) get(index) else null
+    }
+
     val changes = buildList {
         indices.forEach { index ->
             addAll(
@@ -74,71 +72,24 @@ private fun diffList(old: List<Any?>, new: List<Any?>, path: List<String>): Diff
     return Diff(changes)
 }
 
-private fun diffSet(old: Set<Any?>, new: Set<Any?>, path: List<String>): Diff {
-    val added = new - old
-    val removed = old - new
-
-    return Diff(
-        added.map { Change(path, null, it) } +
-                removed.map { Change(path, it, null) }
-    )
-}
-
-private fun diffMap(old: Map<out Any?, Any?>, new: Map<out Any?, Any?>, path: List<String>): Diff {
-    val addedProperties = new.keys - old.keys
-    val removedProperties = old.keys - new.keys
-    val sameProperties = old.keys.intersect(new.keys)
+private fun diffObject(old: ObjectNode, new: ObjectNode, path: List<String>): Diff {
+    val oldFieldNames = old.fieldNames().asSequence().toHashSet()
+    val newFieldNames = new.fieldNames().asSequence().toHashSet()
+    val addedProperties = newFieldNames - oldFieldNames
+    val removedProperties = oldFieldNames - newFieldNames
+    val sameProperties = oldFieldNames intersect newFieldNames
     val changes = buildList {
         sameProperties.forEach { key ->
             addAll(
-                diff(old[key], new[key], path + key.toString()).changes
+                diff(old[key], new[key], path + key).changes
             )
         }
         addAll(addedProperties.map { key ->
-            Change(path + key.toString(), null, new[key])
+            Change(path + key, null, new[key])
         })
         addAll(removedProperties.map { key ->
-            Change(path + key.toString(), old[key], null)
+            Change(path + key, old[key], null)
         })
     }
     return Diff(changes)
-}
-
-private fun ObjectNode.toMap(): Map<String, Any?> {
-    return fields().asSequence().associate { (key, value) ->
-        key to value
-    }
-}
-
-private fun Any.toMap(): Map<String, Any?> {
-    if (this is JsonNode) {
-        return this.toMap()
-    } else {
-        require(this::class.java.packageName.startsWith("at.robert")) {
-            "Can't analyze $this, not a home-former class"
-        }
-    }
-
-    val properties = this::class.members.mapNotNull { it as? KProperty<*> }
-    require(properties.isNotEmpty()) {
-        "Can't analyze $this, no properties found"
-    }
-    return properties.associate {
-        it.name to it.getter.call(this)
-    }
-}
-
-private fun simplify(value: Any?): Any? {
-    return when (value) {
-        null -> null
-        is String, is Int, is Float, is Double, is Long, is Short, is Byte, is Char -> value
-        is Array<*> -> value.toList()
-        is ObjectNode -> value.toMap()
-        is Collection<*> -> value
-        else -> if (value::class.java.packageName.startsWith("at.robert")) {
-            value.toMap()
-        } else {
-            error("Unsupported type: $value (${value.javaClass.name})")
-        }
-    }
 }

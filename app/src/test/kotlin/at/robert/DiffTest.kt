@@ -1,5 +1,7 @@
 package at.robert
 
+import com.fasterxml.jackson.databind.node.IntNode
+import com.fasterxml.jackson.databind.node.TextNode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -11,7 +13,7 @@ class DiffTest {
         val new = "new"
 
         assertEquals(
-            Diff(listOf(Change(emptyList(), old, new))),
+            Diff(listOf(Change(emptyList(), TextNode(old), TextNode(new)))),
             diff(old, new)
         )
     }
@@ -22,7 +24,7 @@ class DiffTest {
         val new = 2
 
         assertEquals(
-            Diff(listOf(Change(emptyList(), old, new))),
+            Diff(listOf(Change(emptyList(), IntNode(old), IntNode(new)))),
             diff(old, new)
         )
     }
@@ -47,13 +49,11 @@ class DiffTest {
         )
 
         assertEquals(
-            Diff(
-                listOf(
-                    Change(listOf("value1"), "old1", "new1"),
-                    Change(listOf("value2"), "old2", "new2"),
-                )
+            hashSetOf(
+                Change(listOf("value1"), TextNode("old1"), TextNode("new1")),
+                Change(listOf("value2"), TextNode("old2"), TextNode("new2")),
             ),
-            diff(old, new)
+            diff(old, new).changes.toHashSet()
         )
     }
 
@@ -65,9 +65,9 @@ class DiffTest {
         assertEquals(
             Diff(
                 listOf(
-                    Change(listOf("[1]"), "old1", "new1"),
-                    Change(listOf("[3]"), "old3", "old4"),
-                    Change(listOf("[4]"), "old4", null),
+                    Change(listOf("[1]"), TextNode("old1"), TextNode("new1")),
+                    Change(listOf("[3]"), TextNode("old3"), TextNode("old4")),
+                    Change(listOf("[4]"), TextNode("old4"), null),
                 )
             ),
             diff(old, new)
@@ -183,13 +183,11 @@ class DiffTest {
         )
 
         assertEquals(
-            Diff(
-                listOf(
-                    Change(listOf("value1", "value1"), "old1", "new1"),
-                    Change(listOf("value2", "[1]", "value1"), "old2", "new2"),
-                )
+            hashSetOf(
+                Change(listOf("value1", "value1"), TextNode("old1"), TextNode("new1")),
+                Change(listOf("value2", "[1]", "value1"), TextNode("old2"), TextNode("new2")),
             ),
-            diff(old, new)
+            diff(old, new).changes.toHashSet()
         )
     }
 }

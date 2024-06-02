@@ -6,7 +6,7 @@ data class Config(
 
 data class ProviderConfig(
     val name: String,
-    val providerConfig: Any?,
+    val config: Any?,
 )
 
 data class ConfigState(
