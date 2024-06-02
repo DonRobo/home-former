@@ -1,4 +1,4 @@
-package at.robert
+package at.robert.util
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.json.JsonMapper

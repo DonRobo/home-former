@@ -1,5 +1,6 @@
 package at.robert
 
+import at.robert.util.jsonObjectMapper
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode

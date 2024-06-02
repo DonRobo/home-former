@@ -1,6 +1,8 @@
 package at.robert
 
 import at.robert.provider.getProvider
+import at.robert.util.jsonObjectMapper
+import at.robert.util.yamlObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import picocli.CommandLine
 import picocli.CommandLine.Option
@@ -55,14 +57,20 @@ class HomeFormer : Callable<Int> {
                 provider = st.provider.copy(
                     config = jsonObjectMapper.valueToTree(provider.config)
                 ),
-                state = mergeStates(jsonObjectMapper.valueToTree(currentState), st.state)
+                state = jsonObjectMapper.readerForUpdating(jsonObjectMapper.valueToTree(currentState))
+                    .readValue(st.state)
             )
         }
 
         if (updateConfig) {
             val updatedConfig = yamlObjectMapper.writeValueAsString(
                 config.copy(
-                    states = states
+                    states = states.sortedWith(
+                        compareBy(
+                            { it.provider.name },
+                            { it.provider.config.toString() },
+                            { it.state.toString() })
+                    )
                 )
             )
             if (updatedConfig != configFile.readText()) {

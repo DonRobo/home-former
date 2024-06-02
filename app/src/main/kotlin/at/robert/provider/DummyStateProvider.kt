@@ -1,7 +1,7 @@
 package at.robert.provider
 
 import at.robert.Diff
-import at.robert.jsonObjectMapper
+import at.robert.util.jsonObjectMapper
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
