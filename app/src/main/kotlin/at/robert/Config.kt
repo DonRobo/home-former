@@ -13,5 +13,5 @@ data class ProviderConfig(
 
 data class ConfigState(
     val provider: ProviderConfig,
-    val state: JsonNode,
+    val state: JsonNode = jsonObjectMapper.createObjectNode(),
 )

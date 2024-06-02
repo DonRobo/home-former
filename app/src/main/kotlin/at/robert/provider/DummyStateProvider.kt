@@ -3,6 +3,7 @@ package at.robert.provider
 import at.robert.Diff
 import at.robert.jsonObjectMapper
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.prefs.Preferences
 
@@ -11,29 +12,58 @@ data class DummyState(
     val state: String? = "state1"
 )
 
-class DummyStateProvider(private val mocked: Boolean = false) : Provider<DummyState> {
+data class DummyStateProviderConfig(
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val name: String?,
+)
+
+class DummyStateProvider(
+    private val mocked: Boolean = false
+) : Provider<DummyState> {
     override fun toString(): String {
-        return "DummyStateProvider"
+        return "DummyStateProvider($stateVariable)"
     }
 
-    private var currentState: DummyState
-
-    init {
-        if (mocked) {
-            currentState = DummyState("state1")
-        } else {
-            val state = Preferences.userNodeForPackage(DummyStateProvider::class.java).get("state", null)
-            currentState = try {
-                if (state == null) {
+    private var currentState: DummyState = DummyState("state1")
+        get() {
+            if (mocked) {
+                return field
+            } else {
+                val state = Preferences.userNodeForPackage(DummyStateProvider::class.java).get(stateVariable, null)
+                return try {
+                    if (state == null) {
+                        DummyState()
+                    } else {
+                        jsonObjectMapper.readValue(state)
+                    }
+                } catch (ex: Exception) {
                     DummyState()
-                } else {
-                    jsonObjectMapper.readValue(state)
                 }
-            } catch (ex: Exception) {
-                DummyState()
             }
         }
-    }
+        set(value) {
+            if (mocked) {
+                field = value
+            } else {
+                Preferences.userNodeForPackage(DummyStateProvider::class.java)
+                    .put(stateVariable, jsonObjectMapper.writeValueAsString(value))
+            }
+        }
+
+    override var config: Any = DummyStateProviderConfig(null)
+        set(value) {
+            if (value is DummyStateProviderConfig) {
+                field = value
+                return
+            }
+
+            val jsonValue = (value as? JsonNode) ?: jsonObjectMapper.valueToTree(value)
+
+            field = jsonObjectMapper.readerForUpdating(field).readValue<DummyStateProviderConfig>(jsonValue)
+        }
+    private val castConfig get() = config as DummyStateProviderConfig
+
+    private val stateVariable get() = castConfig.name ?: "state"
 
     override fun currentState(): DummyState {
         return currentState
@@ -43,10 +73,6 @@ class DummyStateProvider(private val mocked: Boolean = false) : Provider<DummySt
         diff.changes.forEach { change ->
             if (change.path == listOf("state")) {
                 currentState = currentState.copy(state = change.newValue?.textValue())
-                if (!mocked) {
-                    Preferences.userNodeForPackage(DummyStateProvider::class.java)
-                        .put("state", jsonObjectMapper.writeValueAsString(currentState))
-                }
             } else {
                 error("Can't apply diff $diff to ${currentState()}")
             }

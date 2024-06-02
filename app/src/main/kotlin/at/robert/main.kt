@@ -52,6 +52,9 @@ class HomeFormer : Callable<Int> {
             val provider = providers.getValue(st.provider)
             val currentState = provider.currentState()
             st.copy(
+                provider = st.provider.copy(
+                    config = jsonObjectMapper.valueToTree(provider.config)
+                ),
                 state = mergeStates(jsonObjectMapper.valueToTree(currentState), st.state)
             )
         }
