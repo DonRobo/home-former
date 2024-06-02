@@ -9,6 +9,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("reflect"))
+    implementation(libs.jackson.kotlin)
     testImplementation(libs.bundles.junit)
 }
 
@@ -19,7 +20,7 @@ java {
 }
 
 application {
-    mainClass = "at.robert.AppKt"
+    mainClass = "at.robert.MainKt"
 }
 
 tasks.test {

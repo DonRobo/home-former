@@ -1,5 +1,7 @@
 package at.robert
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import kotlin.reflect.KProperty
 
 data class Change(
@@ -13,25 +15,31 @@ data class Diff(
 )
 
 fun <T : Any> diff(old: T?, new: T?, path: List<String> = emptyList()): Diff {
-    @Suppress("UNCHECKED_CAST") // lots of casting happening here. Should be fine though
-    return when {
-        old == new -> Diff(emptyList())
-        old == null -> Diff(listOf(Change(path, null, new)))
-        new == null -> Diff(listOf(Change(path, old, null)))
-        else -> when (old) {
-            is String, is Int, is Float, is Double, is Long, is Short, is Byte, is Char -> Diff(
-                listOf(Change(path, old, new))
-            )
+    if (old == new) return Diff(emptyList())
 
-            is List<*> -> diffList(old as List<Any?>, new as List<Any?>, path)
-            is Map<*, *> -> diffMap(old as Map<Any?, Any?>, new as Map<Any?, Any?>, path)
-            else -> diffDataClass(old, new, path)
+    val simplifiedOld = simplify(old)
+    val simplifiedNew = simplify(new)
+
+    if (simplifiedOld != null && simplifiedNew != null) {
+        require(simplifiedOld::class.java == simplifiedNew::class.java) {
+            "Can't diff $simplifiedOld and $simplifiedNew, different types"
         }
     }
-}
 
-private fun diffDataClass(old: Any, new: Any, path: List<String>): Diff {
-    return diffMap(old.toMap(), new.toMap(), path)
+    @Suppress("UNCHECKED_CAST") // lots of casting, but the previous checks should make them safe
+    return when {
+        simplifiedOld == simplifiedNew -> Diff(emptyList())
+        simplifiedOld == null -> Diff(listOf(Change(path, null, simplifiedNew)))
+        simplifiedNew == null -> Diff(listOf(Change(path, simplifiedOld, null)))
+        else -> when (simplifiedOld) {
+            is List<*> -> diffList(simplifiedOld as List<Any?>, simplifiedNew as List<Any?>, path)
+            is Set<*> -> diffSet(simplifiedOld as Set<Any?>, simplifiedNew as Set<Any?>, path)
+            is Map<*, *> -> diffMap(simplifiedOld as Map<Any?, Any?>, simplifiedNew as Map<Any?, Any?>, path)
+            else -> Diff(
+                listOf(Change(path, simplifiedOld, simplifiedNew))
+            )
+        }
+    }
 }
 
 private fun diffList(old: List<Any?>, new: List<Any?>, path: List<String>): Diff {
@@ -76,7 +84,21 @@ private fun diffMap(old: Map<out Any?, Any?>, new: Map<out Any?, Any?>, path: Li
     return Diff(changes)
 }
 
+private fun ObjectNode.toMap(): Map<String, Any?> {
+    return fields().asSequence().associate { (key, value) ->
+        key to value
+    }
+}
+
 private fun Any.toMap(): Map<String, Any?> {
+    if (this is JsonNode) {
+        return this.toMap()
+    } else {
+        require(this::class.java.packageName.startsWith("at.robert")) {
+            "Can't analyze $this, not a home-former class"
+        }
+    }
+
     val properties = this::class.members.mapNotNull { it as? KProperty<*> }
     require(properties.isNotEmpty()) {
         "Can't analyze $this, no properties found"
@@ -86,3 +108,17 @@ private fun Any.toMap(): Map<String, Any?> {
     }
 }
 
+private fun simplify(value: Any?): Any? {
+    return when (value) {
+        null -> null
+        is String, is Int, is Float, is Double, is Long, is Short, is Byte, is Char -> value
+        is Array<*> -> value.toList()
+        is ObjectNode -> value.toMap()
+        is Collection<*> -> value
+        else -> if (value::class.java.packageName.startsWith("at.robert")) {
+            value.toMap()
+        } else {
+            error("Unsupported type: $value (${value.javaClass.name})")
+        }
+    }
+}
