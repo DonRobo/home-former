@@ -1,5 +1,6 @@
 package at.robert
 
+import at.robert.provider.DummyStateProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

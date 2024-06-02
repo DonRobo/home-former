@@ -1,5 +1,8 @@
 package at.robert
 
+import at.robert.provider.DummyState
+import at.robert.provider.DummyStateProvider
+
 fun main() {
     val stateProvider = DummyStateProvider()
     println(stateProvider.currentState())

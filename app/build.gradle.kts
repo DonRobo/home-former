@@ -10,6 +10,7 @@ repositories {
 dependencies {
     implementation(kotlin("reflect"))
     implementation(libs.jackson.kotlin)
+    implementation(libs.jackson.yaml)
     testImplementation(libs.bundles.junit)
 }
 
