@@ -8,7 +8,27 @@ data class Change(
     val path: List<String>,
     val oldValue: Any?,
     val newValue: Any?,
-)
+) {
+    override fun toString(): String {
+        val operation = when {
+            oldValue == null -> "+"
+            newValue == null -> "-"
+            else -> "~"
+        }
+        val path = path.joinToString(".")
+        fun Any?.diffToString() = when (this) {
+            null -> "null"
+            is String -> "\"$this\""
+            else -> this.toString()
+        }
+        return when (operation) {
+            "+" -> "$operation$path=${newValue.diffToString()}"
+            "-" -> "$operation$path=${oldValue.diffToString()}"
+            "~" -> "$operation$path=${newValue.diffToString()} (was ${oldValue.diffToString()})"
+            else -> error("Unreachable")
+        }
+    }
+}
 
 data class Diff(
     val changes: List<Change>,
