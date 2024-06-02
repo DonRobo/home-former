@@ -12,6 +12,10 @@ data class DummyState(
 )
 
 class DummyStateProvider(private val mocked: Boolean = false) : Provider<DummyState> {
+    override fun toString(): String {
+        return "DummyStateProvider"
+    }
+
     private var currentState: DummyState
 
     init {

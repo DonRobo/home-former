@@ -25,15 +25,16 @@ data class Change(
     }
 }
 
-data class Diff(
+@JvmInline
+value class Diff(
     val changes: List<Change>,
 )
 
 fun <T : Any> diff(old: T?, new: T?, path: List<String> = emptyList()): Diff {
     if (old == new) return Diff(emptyList())
 
-    val oldJson = jsonObjectMapper.valueToTree<JsonNode>(old)
-    val newJson = jsonObjectMapper.valueToTree<JsonNode>(new)
+    val oldJson: JsonNode = if (old !is JsonNode) jsonObjectMapper.valueToTree(old) else old
+    val newJson: JsonNode = if (new !is JsonNode) jsonObjectMapper.valueToTree(new) else new
 
     return when {
         oldJson == newJson -> Diff(emptyList())

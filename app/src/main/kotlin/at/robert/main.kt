@@ -69,11 +69,41 @@ class HomeFormer : Callable<Int> {
                 println("No changes to config file")
             }
         }
+
+        val statePairs = states.map {
+            getProvider(it.provider.name, it.provider.config).currentState() to it
+        }
+        val calculatedChanges = statePairs
+            .map { (current, configState) ->
+                configState to diff(current, configState.state)
+            }
+            .filter { it.second.changes.isNotEmpty() }
         if (showDiff) {
-            TODO()
+            calculatedChanges.flatMap { it.second.changes }.let { changes ->
+                if (changes.isNotEmpty()) {
+                    println("Changes to apply:")
+                    changes.forEach {
+                        println(it)
+                    }
+                } else {
+                    println("No changes found")
+                }
+            }
         }
         if (applyConfig) {
-            TODO()
+            if (calculatedChanges.isNotEmpty()) {
+                calculatedChanges.forEach { providerChanges ->
+                    val provider =
+                        getProvider(providerChanges.first.provider.name, providerChanges.first.provider.config)
+                    println("Applying changes to $provider:")
+                    providerChanges.second.changes.forEach {
+                        println(it)
+                    }
+                    provider.applyDiff(providerChanges.second)
+                }
+            } else {
+                println("No changes to apply")
+            }
         }
 
         if (!updateConfig && !showDiff && !applyConfig) {
