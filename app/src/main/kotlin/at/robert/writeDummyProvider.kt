@@ -7,7 +7,7 @@ fun main() {
         listOf(
             ConfigState(
                 ProviderConfig("DummyStateProvider", null),
-                DummyState(null)
+                jsonObjectMapper.valueToTree(DummyState(null))
             )
         )
     )

@@ -11,6 +11,7 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation(libs.jackson.kotlin)
     implementation(libs.jackson.yaml)
+    implementation(libs.picocli)
     testImplementation(libs.bundles.junit)
 }
 
