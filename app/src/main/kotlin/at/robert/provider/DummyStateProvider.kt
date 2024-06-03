@@ -65,11 +65,11 @@ class DummyStateProvider(
 
     private val stateVariable get() = castConfig.name ?: "state"
 
-    override fun currentState(): DummyState {
+    override suspend fun currentState(): DummyState {
         return currentState
     }
 
-    override fun applyDiff(diff: Diff) {
+    override suspend fun applyDiff(diff: Diff) {
         diff.changes.forEach { change ->
             if (change.path == listOf("state")) {
                 currentState = currentState.copy(state = change.newValue?.textValue())

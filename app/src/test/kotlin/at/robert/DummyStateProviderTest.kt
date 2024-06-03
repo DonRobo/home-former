@@ -2,13 +2,14 @@ package at.robert
 
 import at.robert.provider.DummyStateProvider
 import com.fasterxml.jackson.databind.node.TextNode
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DummyStateProviderTest {
 
     @Test
-    fun applyDiff() {
+    fun applyDiff() = runBlocking {
         val dummyStateProvider = DummyStateProvider(mocked = true)
         val diff = Diff(listOf(Change(listOf("state"), TextNode("state1"), TextNode("state2"))))
         dummyStateProvider.applyDiff(diff)
@@ -16,7 +17,7 @@ class DummyStateProviderTest {
     }
 
     @Test
-    fun `generate and apply diff`() {
+    fun `generate and apply diff`() = runBlocking {
         val dummyStateProvider = DummyStateProvider(mocked = true)
         val oldState = dummyStateProvider.currentState()
         val newState = oldState.copy(state = "state2")

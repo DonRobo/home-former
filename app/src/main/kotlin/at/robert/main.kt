@@ -4,6 +4,7 @@ import at.robert.provider.getProvider
 import at.robert.util.jsonObjectMapper
 import at.robert.util.yamlObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.coroutines.runBlocking
 import picocli.CommandLine
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -50,70 +51,72 @@ class HomeFormer : Callable<Int> {
             }
         }
 
-        val states = config.states.map { st ->
-            val provider = providers.getValue(st.provider)
-            val currentState = provider.currentState()
-            st.copy(
-                provider = st.provider.copy(
-                    config = jsonObjectMapper.valueToTree(provider.config)
-                ),
-                state = jsonObjectMapper.readerForUpdating(jsonObjectMapper.valueToTree(currentState))
-                    .readValue(st.state)
-            )
-        }
+        runBlocking {
+            val states = config.states.map { st ->
+                val provider = providers.getValue(st.provider)
+                val currentState = provider.currentState()
+                st.copy(
+                    provider = st.provider.copy(
+                        config = jsonObjectMapper.valueToTree(provider.config)
+                    ),
+                    state = jsonObjectMapper.readerForUpdating(jsonObjectMapper.valueToTree(currentState))
+                        .readValue(st.state)
+                )
+            }
 
-        if (updateConfig) {
-            val updatedConfig = yamlObjectMapper.writeValueAsString(
-                config.copy(
-                    states = states.sortedWith(
-                        compareBy(
-                            { it.provider.name },
-                            { it.provider.config.toString() },
-                            { it.state.toString() })
+            if (updateConfig) {
+                val updatedConfig = yamlObjectMapper.writeValueAsString(
+                    config.copy(
+                        states = states.sortedWith(
+                            compareBy(
+                                { it.provider.name },
+                                { it.provider.config.toString() },
+                                { it.state.toString() })
+                        )
                     )
                 )
-            )
-            if (updatedConfig != configFile.readText()) {
-                println("Updating config file")
-                configFile.writeText(updatedConfig)
-            } else {
-                println("No changes to config file")
+                if (updatedConfig != configFile.readText()) {
+                    println("Updating config file")
+                    configFile.writeText(updatedConfig)
+                } else {
+                    println("No changes to config file")
+                }
             }
-        }
 
-        val statePairs = states.map {
-            getProvider(it.provider.name, it.provider.config).currentState() to it
-        }
-        val calculatedChanges = statePairs
-            .map { (current, configState) ->
-                configState to diff(current, configState.state)
+            val statePairs = states.map {
+                getProvider(it.provider.name, it.provider.config).currentState() to it
             }
-            .filter { it.second.changes.isNotEmpty() }
-        if (showDiff) {
-            calculatedChanges.flatMap { it.second.changes }.let { changes ->
-                if (changes.isNotEmpty()) {
-                    println("Changes to apply:")
-                    changes.forEach {
-                        println(it)
+            val calculatedChanges = statePairs
+                .map { (current, configState) ->
+                    configState to diff(current, configState.state)
+                }
+                .filter { it.second.changes.isNotEmpty() }
+            if (showDiff) {
+                calculatedChanges.flatMap { it.second.changes }.let { changes ->
+                    if (changes.isNotEmpty()) {
+                        println("Changes to apply:")
+                        changes.forEach {
+                            println(it)
+                        }
+                    } else {
+                        println("No changes found")
+                    }
+                }
+            }
+            if (applyConfig) {
+                if (calculatedChanges.isNotEmpty()) {
+                    calculatedChanges.forEach { providerChanges ->
+                        val provider =
+                            getProvider(providerChanges.first.provider.name, providerChanges.first.provider.config)
+                        println("Applying changes to $provider:")
+                        providerChanges.second.changes.forEach {
+                            println(it)
+                        }
+                        provider.applyDiff(providerChanges.second)
                     }
                 } else {
-                    println("No changes found")
+                    println("No changes to apply")
                 }
-            }
-        }
-        if (applyConfig) {
-            if (calculatedChanges.isNotEmpty()) {
-                calculatedChanges.forEach { providerChanges ->
-                    val provider =
-                        getProvider(providerChanges.first.provider.name, providerChanges.first.provider.config)
-                    println("Applying changes to $provider:")
-                    providerChanges.second.changes.forEach {
-                        println(it)
-                    }
-                    provider.applyDiff(providerChanges.second)
-                }
-            } else {
-                println("No changes to apply")
             }
         }
 

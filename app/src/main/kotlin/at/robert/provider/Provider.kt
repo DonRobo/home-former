@@ -5,8 +5,8 @@ import at.robert.Diff
 interface Provider<T> {
     var config: Any
 
-    fun currentState(): T
-    fun applyDiff(diff: Diff)
+    suspend fun currentState(): T
+    suspend fun applyDiff(diff: Diff)
 }
 
 fun getProvider(providerName: String, config: Any?): Provider<*> {
