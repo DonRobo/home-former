@@ -3,36 +3,18 @@ package at.robert.provider
 import at.robert.Diff
 import at.robert.shelly.ShellyClient
 import at.robert.shelly.client.schema.`in`.ShellyInputType
+import at.robert.shelly.client.schema.`in`.ShellySwitchInMode
+import at.robert.shelly.client.schema.`in`.ShellySwitchInitialState
 import at.robert.util.jsonObjectMapper
 import com.fasterxml.jackson.databind.JsonNode
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import com.fasterxml.jackson.module.kotlin.treeToValue
+import kotlinx.coroutines.*
 
 data class ShellyState(
     val name: String,
     val inputs: Map<Int, ShellyInputState>,
     val outputs: Map<Int, ShellyOutputState>,
 )
-
-enum class ShellyInputType {
-    SWITCH,
-    BUTTON,
-}
-
-enum class ShellyInputOutputType {
-    TOGGLE,
-    MOMENTARY,
-    EDGE,
-    DETACHED,
-    ACTIVATION
-}
-
-enum class ShellyActionOnPower {
-    TURN_ON,
-    TURN_OFF,
-    RESTORE_LAST,
-    MATCH_INPUT,
-}
 
 data class ShellyInputState(
     val enabled: Boolean,
@@ -42,9 +24,10 @@ data class ShellyInputState(
 
 data class ShellyOutputState(
     val name: String,
-    val state: Boolean,
-    val outputType: ShellyInputOutputType,
-    val actionOnPower: ShellyActionOnPower,
+    //TODO
+//    val state:Boolean,
+    val outputType: ShellySwitchInMode,
+    val actionOnPower: ShellySwitchInitialState,
 )
 
 data class ShellyProviderConfig(
@@ -87,27 +70,75 @@ class ShellyProvider : Provider<ShellyState> {
                 ShellyInputState(
                     name = c.name ?: "",
                     enabled = c.enable,
-                    type = ShellyInputType.valueOf(c.type.name),
+                    type = c.type,
                 )
             },
             outputs = outputConfigs.mapValues { (id, d) ->
                 val c = d.await()
                 ShellyOutputState(
                     name = c.name ?: "",
-                    state = outputs.await().single { it.id == id }.output,
-                    outputType = ShellyInputOutputType.valueOf(c.inMode.name),
-                    actionOnPower = ShellyActionOnPower.valueOf(c.initialState.name),
+//                    state = outputs.await().single { it.id == id }.output,
+                    outputType = c.inMode,
+                    actionOnPower = c.initialState,
                 )
             },
         )
     }
 
-    override suspend fun applyDiff(diff: Diff) {
-        diff.changes.forEach { change ->
-            if (change.path.singleOrNull() == "name") {
-                shellyClient().setName(change.newValue!!.asText())
-            } else {
-                error("Can't apply diff $diff to Shelly")
+    override suspend fun applyDiff(diff: Diff) = withContext(Dispatchers.IO) {
+        val shellyClient = shellyClient()
+        val nameChanges = diff.changes.filter { it.path.first() == "name" }
+        val inputChanges =
+            diff.changes.filter { it.path.first() == "inputs" }.groupBy { it.path[1].toInt() }.mapValues {
+                it.value.associate { it.path[2] to it.newValue }.toMutableMap()
+            }
+        val outputChanges =
+            diff.changes.filter { it.path.first() == "outputs" }.groupBy { it.path[1].toInt() }.mapValues {
+                it.value.associate { it.path[2] to it.newValue }.toMutableMap()
+            }
+
+        require(diff.changes.all { it.path.first() in setOf("name", "inputs", "outputs") }) {
+            "Unsupported changes: ${diff.changes}"
+        }
+
+        require(nameChanges.size <= 1) { "Only one name change is supported: $nameChanges" }
+        nameChanges.forEach { change ->
+            launch { shellyClient.setName(change.newValue?.asText() ?: "") }
+        }
+        inputChanges.forEach { (id, changesForId) ->
+            launch {
+                val name = changesForId.remove("name")?.asText()
+                val type = changesForId.remove("type")?.let {
+                    jsonObjectMapper.treeToValue<ShellyInputType>(it)
+                }
+                val enabled = changesForId.remove("enabled")?.asBoolean()
+                require(changesForId.isEmpty()) { "Unsupported input changes: ${changesForId.keys}" }
+                shellyClient.setInputConfig(
+                    id,
+                    name = name,
+                    type = type,
+                    enable = enabled,
+                )
+            }
+        }
+        outputChanges.forEach { (id, changesForId) ->
+            launch {
+                val name = changesForId.remove("name")?.asText()
+                val outputType = changesForId.remove("outputType")?.let {
+                    jsonObjectMapper.treeToValue<ShellySwitchInMode>(it)
+                }
+                val actionOnPower = changesForId.remove("actionOnPower")?.let {
+                    jsonObjectMapper.treeToValue<ShellySwitchInitialState>(it)
+                }
+//                val state = changesForId.remove("state")?.asBoolean()
+                require(changesForId.isEmpty()) { "Unsupported output changes: ${changesForId.keys}" }
+                shellyClient.setSwitchConfig(
+                    id,
+                    name = name,
+                    inMode = outputType,
+                    initialState = actionOnPower,
+                )
+//                shellyClient.setSwitch(id, state)
             }
         }
     }
