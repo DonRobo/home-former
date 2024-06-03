@@ -4,6 +4,9 @@ import at.robert.provider.getProvider
 import at.robert.util.jsonObjectMapper
 import at.robert.util.yamlObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import picocli.CommandLine
 import picocli.CommandLine.Option
@@ -52,9 +55,15 @@ class HomeFormer : Callable<Int> {
         }
 
         runBlocking {
+            val currentStates = config.states.map { st ->
+                async {
+                    val provider = providers.getValue(st.provider)
+                    provider to provider.currentState()
+                }
+            }.awaitAll().toMap()
             val states = config.states.map { st ->
                 val provider = providers.getValue(st.provider)
-                val currentState = provider.currentState()
+                val currentState = currentStates.getValue(provider)
                 st.copy(
                     provider = st.provider.copy(
                         config = jsonObjectMapper.valueToTree(provider.config)
@@ -84,7 +93,7 @@ class HomeFormer : Callable<Int> {
             }
 
             val statePairs = states.map {
-                getProvider(it.provider.name, it.provider.config).currentState() to it
+                currentStates.getValue(getProvider(it.provider.name, it.provider.config)) to it
             }
             val calculatedChanges = statePairs
                 .map { (current, configState) ->
@@ -92,15 +101,17 @@ class HomeFormer : Callable<Int> {
                 }
                 .filter { it.second.changes.isNotEmpty() }
             if (showDiff) {
-                calculatedChanges.flatMap { it.second.changes }.let { changes ->
-                    if (changes.isNotEmpty()) {
-                        println("Changes to apply:")
-                        changes.forEach {
-                            println(it)
+                if (calculatedChanges.isNotEmpty()) {
+                    println("*Changes to apply*")
+                    calculatedChanges.forEach { (config, diff) ->
+                        val provider = providers.getValue(config.provider)
+                        println("Changes for $provider:")
+                        diff.changes.forEach {
+                            println("  $it")
                         }
-                    } else {
-                        println("No changes found")
                     }
+                } else {
+                    println("No changes found")
                 }
             }
             if (applyConfig) {
@@ -112,7 +123,7 @@ class HomeFormer : Callable<Int> {
                         providerChanges.second.changes.forEach {
                             println(it)
                         }
-                        provider.applyDiff(providerChanges.second)
+                        launch { provider.applyDiff(providerChanges.second) }
                     }
                 } else {
                     println("No changes to apply")

@@ -41,7 +41,15 @@ fun <T : Any> diff(old: T?, new: T?, path: List<String> = emptyList()): Diff {
         oldJson == newJson -> Diff(emptyList())
         oldJson.isNull -> Diff(listOf(Change(path, null, newJson)))
         newJson.isNull -> Diff(listOf(Change(path, oldJson, null)))
-        else -> Diff(jsonDiff(oldJson, newJson, path))
+        else -> Diff(
+            jsonDiff(oldJson, newJson, path)
+                .sortedWith(
+                    compareBy(
+                        { it.path.size },
+                        { it.path.joinToString(".") }
+                    )
+                )
+        )
     }
 }
 

@@ -105,20 +105,22 @@ class ShellyProvider : Provider<ShellyState> {
         nameChanges.forEach { change ->
             launch { shellyClient.setName(change.newValue?.asText() ?: "") }
         }
-        inputChanges.forEach { (id, changesForId) ->
-            launch {
-                val name = changesForId.remove("name")?.asText()
-                val type = changesForId.remove("type")?.let {
-                    jsonObjectMapper.treeToValue<ShellyInputType>(it)
+        coroutineScope {
+            inputChanges.forEach { (id, changesForId) ->
+                launch {
+                    val name = changesForId.remove("name")?.asText()
+                    val type = changesForId.remove("type")?.let {
+                        jsonObjectMapper.treeToValue<ShellyInputType>(it)
+                    }
+                    val enabled = changesForId.remove("enabled")?.asBoolean()
+                    require(changesForId.isEmpty()) { "Unsupported input changes: ${changesForId.keys}" }
+                    shellyClient.setInputConfig(
+                        id,
+                        name = name,
+                        type = type,
+                        enable = enabled,
+                    )
                 }
-                val enabled = changesForId.remove("enabled")?.asBoolean()
-                require(changesForId.isEmpty()) { "Unsupported input changes: ${changesForId.keys}" }
-                shellyClient.setInputConfig(
-                    id,
-                    name = name,
-                    type = type,
-                    enable = enabled,
-                )
             }
         }
         outputChanges.forEach { (id, changesForId) ->
@@ -146,4 +148,16 @@ class ShellyProvider : Provider<ShellyState> {
     override fun toString(): String {
         return "ShellyProvider(host=${castConfig.host})"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ShellyProvider) return false
+
+        return castConfig == other.castConfig
+    }
+
+    override fun hashCode(): Int {
+        return castConfig.hashCode()
+    }
+
 }
