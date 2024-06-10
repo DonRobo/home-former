@@ -27,10 +27,9 @@ jobs:
           GH_USER: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload distribution
-        uses: actions/upload-artifact@v4
-        with:
-          name: hf
-          path: app/build/distributions/*.zip
-          if-no-files-found: error
-          compression-level: 0
+      - name: Publish distribution
+        run: ./gradlew publish
+        env:
+          GPR_USER: ${{ github.actor }}
+          GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REF: ${{ github.ref }}
