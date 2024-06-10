@@ -1,6 +1,8 @@
 [versions]
 kotlin-version = "2.0.0"
 jackson-version = "2.17.1"
+ktor-version = "2.3.11"
+exposed-version = "0.41.1"
 
 [libraries]
 junit5 = { module = "org.junit.jupiter:junit-jupiter", version = "5.10.2" }
@@ -10,9 +12,22 @@ jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-y
 picocli = { module = "info.picocli:picocli", version = "4.7.6" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.8.1" }
 shelly = { module = "at.robert.shelly-api:shelly-api", version = "main-SNAPSHOT" }
+ktor-server-jvm = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version"}
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor-version"}
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version"}
+ktor-server-html = { module = "io.ktor:ktor-server-html-builder-jvm", version.ref = "ktor-version"}
+kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.10.1"}
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
+h2 = { module = "com.h2database:h2", version = "2.1.214" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.14" }
 
 [bundles]
 junit = ["junit5", "kotlin-test-junit5"]
+ktor-server = ["ktor-server-jvm", "ktor-server-config-yaml", "ktor-server-netty", "ktor-server-html", "logback-classic"]
+exposed = ["exposed-core", "exposed-jdbc", "h2"]
 
 [plugins]
 jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
+jib = { id = "com.google.cloud.tools.jib", version = "3.4.3" }

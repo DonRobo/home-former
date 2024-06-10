@@ -4,4 +4,4 @@ plugins {
 }
 
 rootProject.name = "home-former"
-include("base", "cli")
+include("base", "cli", "web")
