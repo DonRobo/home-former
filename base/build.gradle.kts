@@ -19,8 +19,8 @@ repositories {
 dependencies {
     implementation(kotlin("reflect"))
     implementation(libs.kotlin.coroutines)
-    implementation(libs.jackson.kotlin)
-    implementation(libs.jackson.yaml)
+    api(libs.jackson.kotlin)
+    api(libs.jackson.yaml)
     implementation(libs.shelly)
     testImplementation(libs.bundles.junit)
 }

@@ -16,6 +16,7 @@ ktor-server-jvm = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor-version"}
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version"}
 ktor-server-html = { module = "io.ktor:ktor-server-html-builder-jvm", version.ref = "ktor-version"}
+ktor-server-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor-version"}
 kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.10.1"}
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
@@ -24,7 +25,7 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.14
 
 [bundles]
 junit = ["junit5", "kotlin-test-junit5"]
-ktor-server = ["ktor-server-jvm", "ktor-server-config-yaml", "ktor-server-netty", "ktor-server-html", "logback-classic"]
+ktor-server = ["ktor-server-jvm", "ktor-server-config-yaml", "ktor-server-netty", "ktor-server-html", "logback-classic", "ktor-server-status"]
 exposed = ["exposed-core", "exposed-jdbc", "h2"]
 
 [plugins]
