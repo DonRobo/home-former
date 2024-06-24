@@ -1,6 +1,8 @@
 package at.robert.hf.plugins
 
+import at.robert.ConfigEvaluator
 import at.robert.hf.ConfigFiles
+import at.robert.util.yamlObjectMapper
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -75,6 +77,9 @@ private suspend fun specificConfigPage(call: ApplicationCall) {
     )
 
     val config = ConfigFiles.getConfig(name)
+    val configEvaluator = ConfigEvaluator(config)
+    val diff = configEvaluator.calculateChanges()
+    val fullConfig = configEvaluator.computeFullConfig()
 
     call.respondHtmlBody("Config - $name") {
         main {
@@ -89,6 +94,29 @@ private suspend fun specificConfigPage(call: ApplicationCall) {
                     renderJson(state.state)
                 }
             }
+            div {
+                h2 {
+                    +"Diff"
+                }
+                diff.forEach { (configState, diff) ->
+                    h3 {
+                        +"${configState.provider.name} - ${configState.provider.config}"
+                    }
+                    diff.changes.forEach {
+                        div {
+                            +it.toString()
+                        }
+                    }
+                }
+            }
+            div {
+                h2 {
+                    +"Full Config"
+                }
+                pre {
+                    +yamlObjectMapper.writeValueAsString(fullConfig)
+                }
+            }
         }
     }
 }
@@ -96,15 +124,22 @@ private suspend fun specificConfigPage(call: ApplicationCall) {
 private fun FlowContent.renderJson(json: JsonNode) {
     when (json) {
         is ObjectNode -> {
-            json.fieldNames().forEach {
-                val fieldName = it
-                val fieldValue = json.get(fieldName)
-                div {
-                    attributes["style"] = "margin-left: 1rem;"
-                    h3 {
-                        +fieldName
+            details {
+                summary {
+                    +"Show"
+                }
+                span {
+                    json.fieldNames().forEach {
+                        val fieldName = it
+                        val fieldValue = json.get(fieldName)
+                        div {
+                            attributes["style"] = "margin-left: 1rem;"
+                            h3 {
+                                +fieldName
+                            }
+                            renderJson(fieldValue)
+                        }
                     }
-                    renderJson(fieldValue)
                 }
             }
         }
