@@ -32,3 +32,22 @@ ktor {
         jreVersion.set(JavaVersion.VERSION_21)
     }
 }
+
+jib {
+    from {
+        platforms {
+            platform {
+                os = "linux"
+                architecture = "amd64"
+            }
+            platform {
+                os = "windows"
+                architecture = "amd64"
+            }
+            platform {
+                os = "linux"
+                architecture = "arm64"
+            }
+        }
+    }
+}
