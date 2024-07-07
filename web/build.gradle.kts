@@ -46,4 +46,11 @@ jib {
 //            }
         }
     }
+    to {
+        image = "ghcr.io/DonRobo/home-former"
+        auth {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GH_USER")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GH_TOKEN")
+        }
+    }
 }

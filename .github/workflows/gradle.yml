@@ -37,8 +37,8 @@ jobs:
           GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REF: ${{ github.ref }}
 
-      - name: Log in to Docker registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
       - name: Publish container images
-        run: ./gradlew jib -Djib.serialize=true --image=ghcr.io/home-former:${{ github.sha }}
+        run: ./gradlew jib
+        env:
+          GPR_USER: ${{ github.actor }}
+          GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
