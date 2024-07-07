@@ -40,14 +40,10 @@ jib {
                 os = "linux"
                 architecture = "amd64"
             }
-            platform {
-                os = "windows"
-                architecture = "amd64"
-            }
-            platform {
-                os = "linux"
-                architecture = "arm64"
-            }
+//            platform {
+//                os = "linux"
+//                architecture = "arm64"
+//            }
         }
     }
 }
