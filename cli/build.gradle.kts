@@ -29,7 +29,7 @@ tasks.test {
 
 publishing {
     repositories {
-        val gprUser = (project.findProperty("gpr.user") as String? ?: System.getenv("GPR_USER"))?.ifBlank { null }
+        val gprUser = (project.findProperty("gpr.user") as String? ?: System.getenv("GH_USER"))?.ifBlank { null }
         if (gprUser != null) {
             maven {
                 name = "GitHubPackages"
@@ -37,7 +37,7 @@ publishing {
                 credentials {
                     username = gprUser
                     password =
-                        (project.findProperty("gpr.key") as String? ?: System.getenv("GPR_TOKEN"))?.ifBlank { null }
+                        (project.findProperty("gpr.key") as String? ?: System.getenv("GH_TOKEN"))?.ifBlank { null }
                             ?: error("No GitHub token set")
                 }
             }
