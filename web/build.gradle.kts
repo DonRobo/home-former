@@ -35,9 +35,10 @@ ktor {
 
 val archs = listOf(
     "armhf",
+    "armv7",
+    "amd64",
     "aarch64",
-    "i386",
-    "amd64"
+    "i386"
 )
 
 jib {
