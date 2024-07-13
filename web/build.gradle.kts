@@ -54,11 +54,13 @@ jib {
         }
     }
     container {
-        labels = mapOf(
-            "io.hass.name" to "home-former",
-            "io.hass.version" to "0.1.0",
-            "io.hass.type" to "addon",
-            "io.hass.arch" to "armhf|amd64",
+        labels.set(
+            mapOf(
+                "io.hass.name" to "home-former",
+                "io.hass.version" to "0.1.0",
+                "io.hass.type" to "addon",
+                "io.hass.arch" to "armhf|amd64",
+            )
         )
     }
 }
