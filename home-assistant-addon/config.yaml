@@ -1,0 +1,12 @@
+name: "Home Former"
+version: latest
+slug: "homeformer"
+description: >-
+  "Former of homes"
+arch:
+  - amd64
+  - armhf
+url: "https://github.com/DonRobo/home-former"
+ports:
+  8080/tcp: 8080
+image: ghcr.io/donrobo/home-former

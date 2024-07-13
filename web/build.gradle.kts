@@ -40,10 +40,10 @@ jib {
                 os = "linux"
                 architecture = "amd64"
             }
-//            platform {
-//                os = "linux"
-//                architecture = "arm64"
-//            }
+            platform {
+                os = "linux"
+                architecture = "arm64"
+            }
         }
     }
     to {
@@ -52,5 +52,12 @@ jib {
             username = project.findProperty("gpr.user") as String? ?: System.getenv("GH_USER")
             password = project.findProperty("gpr.key") as String? ?: System.getenv("GH_TOKEN")
         }
+    }
+    container {
+        labels = mapOf(
+            "io.hass.version" to "",
+            "io.hass.type" to "addon",
+            "io.hass.arch" to "armhf|amd64",
+        )
     }
 }
