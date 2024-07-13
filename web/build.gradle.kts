@@ -33,16 +33,21 @@ ktor {
     }
 }
 
+val archs = listOf(
+    "armhf",
+    "aarch64",
+    "i386",
+    "amd64"
+)
+
 jib {
     from {
         platforms {
-            platform {
-                os = "linux"
-                architecture = "amd64"
-            }
-            platform {
-                os = "linux"
-                architecture = "arm64"
+            archs.forEach { arch ->
+                platform {
+                    os = "linux"
+                    architecture = arch
+                }
             }
         }
     }
@@ -60,7 +65,7 @@ jib {
                 "io.hass.name" to "home-former",
                 "io.hass.version" to "0.1.0",
                 "io.hass.type" to "addon",
-                "io.hass.arch" to "armhf|amd64",
+                "io.hass.arch" to archs.joinToString("|"),
             )
         )
     }
