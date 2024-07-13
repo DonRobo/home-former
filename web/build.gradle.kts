@@ -56,6 +56,7 @@ jib {
     container {
         labels.set(
             mapOf(
+                "org.opencontainers.image.description" to "Home Assistant Addon for Home Former",
                 "io.hass.name" to "home-former",
                 "io.hass.version" to "0.1.0",
                 "io.hass.type" to "addon",
