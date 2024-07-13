@@ -2,7 +2,7 @@ name: "Home Former"
 version: latest
 slug: "homeformer"
 description: >-
-  "Former of homes"
+  Former of homes
 arch:
   - amd64
   - armhf
