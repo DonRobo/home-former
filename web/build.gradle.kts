@@ -44,6 +44,10 @@ jib {
                 os = "linux"
                 architecture = "arm64"
             }
+            platform {
+                os = "linux"
+                architecture = "aarch64"
+            }
         }
     }
     to {
