@@ -2,7 +2,6 @@ name: Kotlin CI with Gradle
 
 on:
   push:
-  pull_request:
 
 jobs:
   build:
@@ -26,19 +25,6 @@ jobs:
 
       - name: Build with Gradle Wrapper
         run: ./gradlew build
-        env:
-          GH_USER: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish distribution
-        run: ./gradlew publish
-        env:
-          GH_USER: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REF: ${{ github.ref }}
-
-      - name: Publish container images
-        run: ./gradlew jib
         env:
           GH_USER: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
