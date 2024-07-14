@@ -2,5 +2,9 @@ ktor:
   application:
     modules:
       - at.robert.hf.ApplicationKt.module
+  development: true
   deployment:
     port: 8080
+    watch:
+      - classes
+      - resources
