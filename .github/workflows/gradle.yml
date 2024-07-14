@@ -2,6 +2,8 @@ name: Kotlin CI with Gradle
 
 on:
   push:
+    branches: [ * ]
+    tags: [ * ]
 
 jobs:
   build:
@@ -28,3 +30,19 @@ jobs:
         env:
           GH_USER: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish distribution
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew publish
+        env:
+          GH_USER: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REF: ${{ github.ref }}
+
+      - name: Publish container images
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew jib
+        env:
+          GH_USER: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
