@@ -64,7 +64,7 @@ jib {
                 "io.hass.arch" to "amd64|aarch64",
             )
         )
-        environment = mapOf("DATA_FOLDER" to "/data")
+        environment = mapOf("DATA_FOLDER" to "/data/configs")
         ports = listOf("8080")
     }
 }
