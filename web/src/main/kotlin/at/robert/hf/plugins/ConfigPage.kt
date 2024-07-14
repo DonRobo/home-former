@@ -28,14 +28,14 @@ private fun BODY.configList() {
             ul {
                 configs.forEach { config ->
                     li {
-                        a(href = "/config/$config") {
+                        a(href = "config/$config") {
                             +config
                         }
                     }
                 }
             }
         }
-        form(action = "/config", method = FormMethod.post, encType = FormEncType.multipartFormData) {
+        form(action = "config", method = FormMethod.post, encType = FormEncType.multipartFormData) {
             h2 {
                 +"Upload Config"
             }
@@ -67,7 +67,7 @@ private suspend fun uploadConfigFile(call: ApplicationCall) {
         }
         part.dispose()
     }
-    call.respondRedirect("/config")
+    call.respondRedirect("${call.basePath}config")
 }
 
 private suspend fun specificConfigPage(call: ApplicationCall) {
@@ -180,6 +180,9 @@ fun Application.configureConfigPage() {
 private suspend fun ApplicationCall.respondHtmlBody(title: String, block: BODY.() -> Unit) {
     this.respondHtml {
         head {
+            base {
+                href = basePath
+            }
             title(title)
             link(rel = "stylesheet", href = "https://unpkg.com/missing.css@1.1.2")
         }
@@ -188,3 +191,11 @@ private suspend fun ApplicationCall.respondHtmlBody(title: String, block: BODY.(
         }
     }
 }
+
+private val ApplicationCall.basePath: String
+    get() = (this.request.header("X-Ingress-Path") ?: "/").let {
+        if (it.endsWith("/"))
+            return it
+        else
+            return "$it/"
+    }
