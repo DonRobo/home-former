@@ -66,5 +66,6 @@ jib {
         )
         environment = mapOf("DATA_FOLDER" to "/data/configs")
         ports = listOf("8080")
+        jvmFlags = listOf("-Xmx64m")
     }
 }
