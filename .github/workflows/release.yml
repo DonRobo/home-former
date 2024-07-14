@@ -6,7 +6,7 @@ on:
         required: true
         description: "Version to release"
 
-name: Release ${{ github.event.inputs.version }}
+name: Release
 
 jobs:
   release_workflow:
