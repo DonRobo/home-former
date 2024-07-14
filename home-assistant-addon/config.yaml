@@ -9,4 +9,4 @@ arch:
 url: "https://github.com/DonRobo/home-former"
 ports:
   8080/tcp: 8080
-image: ghcr.io/donrobo/home-former
+image: ghcr.io/donrobo/home-former-{arch]
