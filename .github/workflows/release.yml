@@ -42,7 +42,6 @@ jobs:
         run: |
           git add build.gradle.kts home-assistant-addon/config.yaml
           git commit -m "Bump version to ${{ github.event.inputs.version }}"
-          git push
 
       - name: Merge to master
         run: |
@@ -51,3 +50,5 @@ jobs:
           git tag ${{ github.event.inputs.version }}
           git push origin master
           git push origin ${{ github.event.inputs.version }}
+          git checkout develop
+          git push
