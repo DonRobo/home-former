@@ -1,0 +1,44 @@
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: "Version to release"
+
+name: Release
+
+jobs:
+  release_workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false
+
+      - name: Update version numbers
+        run: ./gradlew setVersion -PnewVersion=${{ github.event.inputs.version }}
+
+      - name: Commit version bump
+        run: |
+          git add build.gradle.kts home-assistant-addon/config.yaml
+          git commit -m "Bump version to ${{ github.event.inputs.version }}"
+          git push origin develop
+
+      - name: Merge to master
+        run: |
+          git checkout master
+          git merge develop
+          git tag ${{ github.event.inputs.version }}
+          git push origin master
+          git push origin ${{ github.event.inputs.version }}
