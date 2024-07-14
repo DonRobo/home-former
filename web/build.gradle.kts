@@ -64,5 +64,6 @@ jib {
                 "io.hass.arch" to "amd64|aarch64",
             )
         )
+        ports = listOf("8080")
     }
 }
