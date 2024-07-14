@@ -2,8 +2,10 @@ name: Kotlin CI with Gradle
 
 on:
   push:
-    branches: [ * ]
-    tags: [ * ]
+    branches:
+      - '*'
+    tags:
+      - '*'
 
 jobs:
   build:
