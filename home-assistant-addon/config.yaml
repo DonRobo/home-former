@@ -8,5 +8,8 @@ arch:
   - aarch64
 url: "https://github.com/DonRobo/home-former"
 ports:
-  8080/tcp: 8080
+  8080/tcp: null
 image: ghcr.io/donrobo/home-former
+startup: application
+ingress: true
+ingress_port: 8080
