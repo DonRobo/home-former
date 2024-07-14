@@ -64,6 +64,7 @@ jib {
                 "io.hass.arch" to "amd64|aarch64",
             )
         )
+        environment["DATA_FOLDER"] = "/data"
         ports = listOf("8080")
     }
 }

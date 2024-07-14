@@ -6,7 +6,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
 
 object ConfigFiles {
-    private val baseFolder = File("config")
+    private val baseFolder = System.getenv("DATA_FOLDER")?.let { File(it) } ?: File("config")
 
     init {
         if (!baseFolder.exists()) {
