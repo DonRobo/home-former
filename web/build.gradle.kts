@@ -60,7 +60,7 @@ jib {
                 "io.hass.name" to "home-former",
                 "io.hass.version" to "0.1.0",
                 "io.hass.type" to "addon",
-                "io.hass.arch" to "arm64|amd64|aarch64",
+                "io.hass.arch" to "amd64|aarch64",
             )
         )
     }
