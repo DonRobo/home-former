@@ -52,13 +52,14 @@ jib {
             username = project.findProperty("gpr.user") as String? ?: System.getenv("GH_USER")
             password = project.findProperty("gpr.key") as String? ?: System.getenv("GH_TOKEN")
         }
+        tags = setOf("latest", version.toString())
     }
     container {
         labels.set(
             mapOf(
                 "org.opencontainers.image.description" to "Home Assistant Addon for Home Former",
                 "io.hass.name" to "home-former",
-                "io.hass.version" to "0.1.0",
+                "io.hass.version" to version.toString(),
                 "io.hass.type" to "addon",
                 "io.hass.arch" to "amd64|aarch64",
             )
