@@ -1,4 +1,4 @@
-package at.robert.hf.plugins
+package at.robert.hf.page
 
 import at.robert.hf.respondHtmlBody
 import at.robert.shelly.ShellyClient

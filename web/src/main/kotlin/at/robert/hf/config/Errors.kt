@@ -1,4 +1,4 @@
-package at.robert.hf.plugins
+package at.robert.hf.config
 
 import io.ktor.http.*
 import io.ktor.server.application.*
