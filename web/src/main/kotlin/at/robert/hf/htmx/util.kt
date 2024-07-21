@@ -5,7 +5,7 @@ import kotlinx.html.*
 
 val hxObjectMapper = jacksonObjectMapper()
 fun Tag.hxPost(hxCtx: HtmxContext, vararg params: Pair<String, Any>) {
-    attributes["hx-post"] = hxCtx.route
+    attributes["hx-post"] = hxCtx.route.removePrefix("/")
     attributes["hx-target"] = "#${hxCtx.component}"
     attributes["hx-swap"] = "innerHTML"
     attributes["hx-vals"] = params.toMap().let { hxObjectMapper.writeValueAsString(it) }
@@ -17,7 +17,7 @@ fun FlowContent.hxActionForm(
     block: FORM.() -> Unit
 ) {
     form {
-        attributes["hx-post"] = hxCtx.route
+        attributes["hx-post"] = hxCtx.route.removePrefix("/")
         attributes["hx-target"] = "#${hxCtx.component}"
         attributes["hx-swap"] = "innerHTML"
 
