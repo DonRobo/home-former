@@ -2,6 +2,7 @@ package at.robert.provider
 
 import at.robert.Diff
 import at.robert.shelly.ShellyClient
+import at.robert.shelly.client.schema.`in`.ShellyCoverInMode
 import at.robert.shelly.client.schema.`in`.ShellyInputType
 import at.robert.shelly.client.schema.`in`.ShellySwitchInMode
 import at.robert.shelly.client.schema.`in`.ShellySwitchInitialState
@@ -14,6 +15,7 @@ data class ShellyState(
     val name: String,
     val inputs: Map<Int, ShellyInputState>,
     val outputs: Map<Int, ShellyOutputState>,
+    val covers: Map<Int, ShellyCoverState>,
 )
 
 data class ShellyInputState(
@@ -28,6 +30,12 @@ data class ShellyOutputState(
 //    val state:Boolean,
     val outputType: ShellySwitchInMode,
     val actionOnPower: ShellySwitchInitialState,
+)
+
+data class ShellyCoverState(
+    val name: String,
+    val invertDirection: Boolean,
+    val inMode: ShellyCoverInMode,
 )
 
 data class ShellyProviderConfig(
@@ -57,11 +65,15 @@ class ShellyProvider : Provider<ShellyState> {
         val name = async { shellyClient.getName() }
         val inputs = async { shellyClient.getInputs() }
         val outputs = async { shellyClient.getSwitches() }
+        val covers = async { shellyClient.getCovers() }
         val inputConfigs = inputs.await().associate {
             it.id to async { shellyClient.getInputConfig(it.id) }
         }
         val outputConfigs = outputs.await().associate {
             it.id to async { shellyClient.getSwitchConfig(it.id) }
+        }
+        val coverConfigs = covers.await().associate {
+            it.id to async { shellyClient.getCoverConfig(it.id) }
         }
         return@coroutineScope ShellyState(
             name = name.await(),
@@ -82,6 +94,14 @@ class ShellyProvider : Provider<ShellyState> {
                     actionOnPower = c.initialState,
                 )
             },
+            covers = coverConfigs.mapValues { (id, d) ->
+                val c = d.await()
+                ShellyCoverState(
+                    name = c.name,
+                    invertDirection = c.invertDirections,
+                    inMode = c.inMode,
+                )
+            }
         )
     }
 
@@ -96,8 +116,12 @@ class ShellyProvider : Provider<ShellyState> {
             diff.changes.filter { it.path.first() == "outputs" }.groupBy { it.path[1].toInt() }.mapValues {
                 it.value.associate { it.path[2] to it.newValue }.toMutableMap()
             }
+        val coverChanges =
+            diff.changes.filter { it.path.first() == "covers" }.groupBy { it.path[1].toInt() }.mapValues {
+                it.value.associate { it.path[2] to it.newValue }.toMutableMap()
+            }
 
-        require(diff.changes.all { it.path.first() in setOf("name", "inputs", "outputs") }) {
+        require(diff.changes.all { it.path.first() in setOf("name", "inputs", "outputs", "covers") }) {
             "Unsupported changes: ${diff.changes}"
         }
 
@@ -132,7 +156,7 @@ class ShellyProvider : Provider<ShellyState> {
                 val actionOnPower = changesForId.remove("actionOnPower")?.let {
                     jsonObjectMapper.treeToValue<ShellySwitchInitialState>(it)
                 }
-//                val state = changesForId.remove("state")?.asBoolean()
+//                val state = changesForId.remove("state")?.booleanValue()
                 require(changesForId.isEmpty()) { "Unsupported output changes: ${changesForId.keys}" }
                 shellyClient.setSwitchConfig(
                     id,
@@ -141,6 +165,22 @@ class ShellyProvider : Provider<ShellyState> {
                     initialState = actionOnPower,
                 )
 //                shellyClient.setSwitch(id, state)
+            }
+        }
+        coverChanges.forEach { (id, changesForId) ->
+            launch {
+                val name = changesForId.remove("name")?.asText()
+                val invertDirection = changesForId.remove("invertDirection")?.booleanValue()
+                val inMode = changesForId.remove("inMode")?.let {
+                    jsonObjectMapper.treeToValue<ShellyCoverInMode>(it)
+                }
+                require(changesForId.isEmpty()) { "Unsupported cover changes: ${changesForId.keys}" }
+                shellyClient.setCoverConfig(
+                    id,
+                    name = name,
+                    invertDirections = invertDirection,
+                    inMode = inMode,
+                )
             }
         }
     }
