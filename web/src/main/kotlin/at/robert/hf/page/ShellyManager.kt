@@ -3,6 +3,7 @@ package at.robert.hf.page
 import at.robert.hf.ConfigFiles
 import at.robert.hf.respondHtmlBody
 import at.robert.shelly.ShellyClient
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -18,21 +19,11 @@ import kotlinx.html.p
 fun Application.configureShellyManager() {
     routing {
         get("/shelly") {
-            shellyManagerPage()
+            configSelectionPage()
         }
-        post("/shelly") {
-            shellyManagerAction()
+        get("/shelly/{config}") {
+            shellySelectionPage(call.parameters["config"]!!)
         }
-    }
-}
-
-private suspend fun PipelineContext<*, ApplicationCall>.shellyManagerPage() {
-    val configFileName = call.parameters["config"]
-    val shellyIp = call.parameters["shelly"]
-    return when {
-        shellyIp != null -> shellyPage(shellyIp)
-        configFileName != null -> shellySelectionPage(configFileName)
-        else -> configSelectionPage()
     }
 }
 
@@ -56,7 +47,7 @@ private suspend fun PipelineContext<*, ApplicationCall>.shellySelectionPage(conf
                 h1 { +"Shelly Manager" }
                 shellys.forEach { (host, _) ->
                     p {
-                        a(href = "shelly?shelly=$host") {
+                        a(href = "shelly/${configFileName.encodeURLPathPart()}/${host.encodeURLPathPart()}") {
                             +"Shelly: ${shellyNames[host]}"
                         }
                     }
@@ -73,7 +64,7 @@ suspend fun PipelineContext<*, ApplicationCall>.configSelectionPage() {
             p { +"Please select a config" }
             ConfigFiles.getConfigs().forEach {
                 p {
-                    a(href = "shelly?config=$it") { +it }
+                    a(href = "shelly/${it.encodeURLPathPart()}") { +it }
                 }
             }
         }

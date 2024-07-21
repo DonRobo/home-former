@@ -1,126 +1,175 @@
 package at.robert.hf.page
 
-import at.robert.hf.respondHtmlBody
+import at.robert.hf.Once
+import at.robert.hf.basicFormInput
+import at.robert.hf.htmx.*
 import at.robert.shelly.ShellyClient
-import at.robert.shelly.client.schema.`in`.ShellyCover
-import at.robert.shelly.client.schema.`in`.ShellyCoverConfig
-import at.robert.shelly.client.schema.`in`.ShellyOutput
-import at.robert.shelly.client.schema.`in`.ShellySwitchConfig
+import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.util.pipeline.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.html.*
 
-suspend fun PipelineContext<*, ApplicationCall>.shellyPage(shellyHost: String) {
-    val shellyClient = ShellyClient(shellyHost)
-    val name: String
-//    val inputs: List<ShellyInput>
-    val outputs: List<Pair<ShellyOutput, ShellySwitchConfig>>
-    val covers: List<Pair<ShellyCover, ShellyCoverConfig>>
+class ShellyPage(
+    private val shellyHost: String,
+) : HtmxPage() {
+    private val shellyClient = ShellyClient(shellyHost)
+    private val name = Once { shellyClient.getName() }
 
-    coroutineScope {
-        val nameD = async { shellyClient.getName() }
-//        val inputsD = async { shellyClient.getInputs() }
-        val outputsD = async {
-            shellyClient.getSwitches().map {
-                it to async { shellyClient.getSwitchConfig(it.id) }
-            }.map { it.first to it.second.await() }
-        }
-        val coversD = async {
-            shellyClient.getCovers().map {
-                it to async { shellyClient.getCoverConfig(it.id) }
-            }.map { it.first to it.second.await() }
-        }
-
-        name = nameD.await()
-//        inputs = inputsD.await()
-        outputs = outputsD.await()
-        covers = coversD.await()
+    override suspend fun title(): String {
+        return "Shelly - ${name.get()} - $shellyHost"
     }
 
-    call.respondHtmlBody("Shelly - $name - $shellyHost", includeHtmx = true) {
-        main {
-            h1 { +name }
-            p {
-                val shellyUrl = "http://$shellyHost"
-                a(href = shellyUrl) {
-                    +shellyUrl
-                }
-            }
-
-            shellyActionForm(
-                shellyHost = shellyHost,
-                action = "rename",
-                actionLabel = "Rename"
-            ) {
-                basicFormInput(
-                    paramName = "name",
-                    label = "Name",
-                    defaultValue = name
-                )
-            }
-
-            if (outputs.isNotEmpty()) {
-                h2 { +"Switches" }
-                outputs.forEach { (output, config) ->
-                    div("box") {
-                        p { +"Switch ${output.id}" }
-                        shellyActionForm(
-                            shellyHost = shellyHost,
-                            action = "rename-switch",
-                            actionLabel = "Rename"
-                        ) {
-                            hidden("output", output.id)
-                            basicFormInput(
-                                paramName = "name",
-                                label = "Name",
-                                defaultValue = config.name,
-                            )
-                        }
+    override suspend fun renderHeader(render: TagConsumer<*>) {
+        name.get().let { name ->
+            render.apply {
+                h1 { +name }
+                p {
+                    val shellyUrl = "http://$shellyHost"
+                    a(href = shellyUrl) {
+                        +shellyUrl
                     }
                 }
             }
         }
     }
-}
 
-private fun FlowContent.shellyActionForm(
-    shellyHost: String,
-    action: String,
-    actionLabel: String,
-    block: FORM.() -> Unit
-) {
-    form(
-        action = "shelly",
-        method = FormMethod.post
-    ) {
-        block()
-        input(type = InputType.hidden, name = "action") {
-            value = action
-        }
-        input(type = InputType.hidden, name = "shelly") {
-            value = shellyHost
-        }
-        input(type = InputType.submit) {
-            value = actionLabel
+    inner class RenameComponent : HtmxComponent {
+        override val id: String
+            get() = "rename-shelly"
+
+        override suspend fun render(
+            render: TagConsumer<*>,
+            params: Parameters,
+            hxCtx: HtmxContext
+        ) {
+            val name = if (params.contains("name")) {
+                shellyClient.setName(params["name"]!!)
+                params["name"]!!
+            } else {
+                name.get()
+            }
+            render.apply {
+                div("box") {
+                    hxActionForm(
+                        hxCtx = hxCtx,
+                        actionLabel = "Rename"
+                    ) {
+                        basicFormInput(
+                            paramName = "name",
+                            label = "Name",
+                            defaultValue = name
+                        )
+                    }
+                }
+            }
         }
     }
+
+    inner class SwitchComponent(
+        private val switchId: Int
+    ) : HtmxComponent {
+        override val id: String
+            get() = "switch-$switchId"
+
+        override suspend fun render(render: TagConsumer<*>, params: Parameters, hxCtx: HtmxContext) {
+            if (params.contains("toggle")) {
+                shellyClient.toggleSwitch(switchId)
+            }
+            val name = if (params.contains("name")) {
+                shellyClient.setSwitchConfig(switchId, params["name"]!!)
+                params["name"]!!
+            } else {
+                shellyClient.getSwitchConfig(switchId).name
+            }
+            render.div("box") {
+                h1 { +"Switch $switchId" }
+                hxActionForm(
+                    hxCtx = hxCtx,
+                    actionLabel = "Rename"
+                ) {
+                    basicFormInput(
+                        paramName = "name",
+                        label = "Name",
+                        defaultValue = name
+                    )
+                }
+                button {
+                    hxPost(hxCtx, "toggle" to true)
+                    +"Toggle"
+                }
+            }
+        }
+    }
+
+    inner class InputComponent(
+        private val inputId: Int,
+    ) : HtmxComponent {
+        override val id: String
+            get() = "input-$inputId"
+
+        override suspend fun render(render: TagConsumer<*>, params: Parameters, hxCtx: HtmxContext) {
+            val name = if (params.contains("name")) {
+                shellyClient.setInputConfig(inputId, params["name"]!!)
+                params["name"]!!
+            } else {
+                shellyClient.getInputConfig(inputId).name
+            }
+            render.div("box") {
+                h1 { +"Input $inputId" }
+                hxActionForm(
+                    hxCtx = hxCtx,
+                    actionLabel = "Rename"
+                ) {
+                    basicFormInput(
+                        paramName = "name",
+                        label = "Name",
+                        defaultValue = name
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun components(): List<HtmxComponent> =
+        coroutineScope {
+            val inputsD = async { shellyClient.getInputs() }
+            val outputsD = async { shellyClient.getSwitches() }
+//            val coversD = async {
+//                shellyClient.getCovers().map {
+//                    it to async { shellyClient.getCoverConfig(it.id) }
+//                }.map { it.first to it.second.await() }
+//            }
+
+            return@coroutineScope buildList {
+                add(RenameComponent())
+                add(simpleComponent("inputHeader") { h2 { +"Inputs" } })
+                inputsD.await().forEach { input ->
+                    add(InputComponent(input.id))
+                }
+                add(simpleComponent("outputHeader") { h2 { +"Switches" } })
+                outputsD.await().forEach { output ->
+                    add(SwitchComponent(output.id))
+                }
+            }
+        }
+
+    override suspend fun getComponent(id: String): HtmxComponent =
+        when {
+            id == "rename-shelly" -> RenameComponent()
+            id.startsWith("input-") -> InputComponent(id.substringAfter("input-").toInt())
+            id.startsWith("switch-") -> SwitchComponent(id.substringAfter("switch-").toInt())
+            else -> TODO()
+        }
+
 }
 
-private fun FORM.basicFormInput(paramName: String, label: String, defaultValue: String?) {
-    label {
-        htmlFor = paramName
-        +label
-    }
-    input(type = InputType.text, name = paramName) {
-        defaultValue?.let { value = it }
-        id = paramName
-    }
-}
-
-private fun FORM.hidden(paramName: String, value: Any) {
-    input(type = InputType.hidden, name = paramName) {
-        this.value = value.toString()
+fun Application.registerShellyPage() {
+    routing {
+        HtmxRenderer.registerPage(this, "/shelly/{config}/{host}") { parameters ->
+            val host = parameters["host"]!!
+            ShellyPage(host)
+        }
     }
 }
