@@ -11,10 +11,7 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.html.a
-import kotlinx.html.h1
-import kotlinx.html.main
-import kotlinx.html.p
+import kotlinx.html.*
 
 fun Application.configureShellyManager() {
     routing {
@@ -49,6 +46,11 @@ private suspend fun PipelineContext<*, ApplicationCall>.shellySelectionPage(conf
                     p {
                         a(href = "shelly/${configFileName.encodeURLPathPart()}/${host.encodeURLPathPart()}") {
                             +"Shelly: ${shellyNames[host]}"
+                        }
+                        br { }
+                        val hostUrl = "http://$host"
+                        a(href = hostUrl, classes = "italic") {
+                            +hostUrl
                         }
                     }
                 }
