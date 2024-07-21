@@ -1,7 +1,9 @@
-package at.robert.hf.plugins
+package at.robert.hf.page
 
 import at.robert.ConfigEvaluator
 import at.robert.hf.ConfigFiles
+import at.robert.hf.basePath
+import at.robert.hf.respondHtmlBody
 import at.robert.util.yamlObjectMapper
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.IntNode
@@ -10,7 +12,6 @@ import com.fasterxml.jackson.databind.node.TextNode
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
-import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -166,7 +167,7 @@ private fun FlowContent.renderJson(json: JsonNode) {
 fun Application.configureConfigPage() {
     routing {
         get("/config") {
-            call.respondHtmlBody("Config", BODY::configList)
+            call.respondHtmlBody("Config", block = BODY::configList)
         }
         post("/config") {
             uploadConfigFile(call)
@@ -176,26 +177,3 @@ fun Application.configureConfigPage() {
         }
     }
 }
-
-private suspend fun ApplicationCall.respondHtmlBody(title: String, block: BODY.() -> Unit) {
-    this.respondHtml {
-        head {
-            base {
-                href = basePath
-            }
-            title(title)
-            link(rel = "stylesheet", href = "https://unpkg.com/missing.css@1.1.2")
-        }
-        body {
-            block()
-        }
-    }
-}
-
-private val ApplicationCall.basePath: String
-    get() = (this.request.header("X-Ingress-Path") ?: "/").let {
-        if (it.endsWith("/"))
-            return it
-        else
-            return "$it/"
-    }
