@@ -15,5 +15,7 @@ fun Application.module() {
     configureStaticContent()
     configureConfigPage()
     configureShellyManager()
+
+//    configureHtmxPage()
 }
 

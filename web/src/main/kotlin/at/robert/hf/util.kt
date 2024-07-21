@@ -13,9 +13,11 @@ suspend fun ApplicationCall.respondHtmlBody(title: String, includeHtmx: Boolean 
             }
             title(title)
             link(rel = "stylesheet", href = "https://unpkg.com/missing.css@1.1.2")
-            //  <script src="https://unpkg.com/htmx.org@2.0.1"></script>
             if (includeHtmx) {
-                script(src = "https://unpkg.com/htmx.org@2.0.1") {}
+                script(src = "https://unpkg.com/htmx.org@2.0.1") {
+                    integrity = "sha384-QWGpdj554B4ETpJJC9z+ZHJcA/i59TyjxEPXiiUgN2WmTyV5OEZWCD6gQhgkdpB/"
+                    attributes["crossorigin"] = "anonymous"
+                }
             }
         }
         body {
