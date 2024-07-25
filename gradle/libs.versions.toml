@@ -21,7 +21,7 @@ kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
 h2 = { module = "com.h2database:h2", version = "2.3.230" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.14" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.6" }
 
 [bundles]
 junit = ["junit5", "kotlin-test-junit5"]
