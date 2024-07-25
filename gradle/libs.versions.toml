@@ -17,7 +17,7 @@ ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version"}
 ktor-server-html = { module = "io.ktor:ktor-server-html-builder-jvm", version.ref = "ktor-version"}
 ktor-server-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor-version"}
-kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.10.1"}
+kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.11.0"}
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
 h2 = { module = "com.h2database:h2", version = "2.1.214" }
