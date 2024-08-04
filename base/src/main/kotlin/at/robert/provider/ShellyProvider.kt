@@ -7,14 +7,19 @@ import at.robert.shelly.client.schema.`in`.ShellyInputType
 import at.robert.shelly.client.schema.`in`.ShellySwitchInMode
 import at.robert.shelly.client.schema.`in`.ShellySwitchInitialState
 import at.robert.util.jsonObjectMapper
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import kotlinx.coroutines.*
+import kotlin.math.max
 
 data class ShellyState(
     val name: String,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val inputs: Map<Int, ShellyInputState>,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val outputs: Map<Int, ShellyOutputState>,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val covers: Map<Int, ShellyCoverState>,
 )
 
@@ -30,6 +35,7 @@ data class ShellyOutputState(
 //    val state:Boolean,
     val outputType: ShellySwitchInMode,
     val actionOnPower: ShellySwitchInitialState,
+    val consumptionType: String,
 )
 
 data class ShellyCoverState(
@@ -75,6 +81,14 @@ class ShellyProvider : Provider<ShellyState> {
         val coverConfigs = covers.await().associate {
             it.id to async { shellyClient.getCoverConfig(it.id) }
         }
+        val consumptionTypes = async {
+            if (outputs.await().isEmpty()) return@async emptyList()
+            val consumptionTypes = shellyClient.getConsumptionTypes()
+            outputs.await().sortedBy { it.id }.mapIndexed { index, shellyOutput ->
+                require(index == shellyOutput.id)
+                consumptionTypes.getOrNull(shellyOutput.id) ?: ""
+            }
+        }
         return@coroutineScope ShellyState(
             name = name.await(),
             inputs = inputConfigs.mapValues { (_, d) ->
@@ -92,6 +106,7 @@ class ShellyProvider : Provider<ShellyState> {
 //                    state = outputs.await().single { it.id == id }.output,
                     outputType = c.inMode,
                     actionOnPower = c.initialState,
+                    consumptionType = consumptionTypes.await()[id]
                 )
             },
             covers = coverConfigs.mapValues { (id, d) ->
@@ -113,8 +128,13 @@ class ShellyProvider : Provider<ShellyState> {
                 it.value.associate { it.path[2] to it.newValue }.toMutableMap()
             }
         val outputChanges =
-            diff.changes.filter { it.path.first() == "outputs" }.groupBy { it.path[1].toInt() }.mapValues {
-                it.value.associate { it.path[2] to it.newValue }.toMutableMap()
+            diff.changes.filter { it.path.first() == "outputs" && it.path[2] != "consumptionType" }
+                .groupBy { it.path[1].toInt() }.mapValues {
+                    it.value.associate { it.path[2] to it.newValue }.toMutableMap()
+                }
+        val outputConsumptionTypeChanges =
+            diff.changes.filter { it.path.first() == "outputs" && it.path[2] == "consumptionType" }.associate {
+                it.path[1].toInt() to (it.newValue?.asText() ?: error("Consumption type not valid: ${it.newValue}"))
             }
         val coverChanges =
             diff.changes.filter { it.path.first() == "covers" }.groupBy { it.path[1].toInt() }.mapValues {
@@ -167,6 +187,22 @@ class ShellyProvider : Provider<ShellyState> {
 //                shellyClient.setSwitch(id, state)
             }
         }
+        if (outputConsumptionTypeChanges.isNotEmpty()) {
+            val currentConsumptionTypes = shellyClient.getConsumptionTypes()
+            val newConsumptionTypes = buildList {
+                (0 until max(
+                    currentConsumptionTypes.size,
+                    outputConsumptionTypeChanges.keys.max() + 1
+                )).forEach {
+                    add(
+                        outputConsumptionTypeChanges[it] ?: currentConsumptionTypes.getOrNull(it) ?: ""
+                    )
+                }
+            }
+            shellyClient.setConfig(
+                consumptionTypes = newConsumptionTypes
+            )
+        }
         coverChanges.forEach { (id, changesForId) ->
             launch {
                 val name = changesForId.remove("name")?.asText()
@@ -200,4 +236,11 @@ class ShellyProvider : Provider<ShellyState> {
         return castConfig.hashCode()
     }
 
+}
+
+private suspend fun ShellyClient.getConsumptionTypes(): List<String> {
+    val conf = getConfig()
+    val uiData = conf.get("ui_data")
+    val consumptionTypes = uiData?.get("consumption_types")
+    return consumptionTypes?.map { it.asText() } ?: emptyList()
 }
