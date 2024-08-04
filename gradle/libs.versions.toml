@@ -11,7 +11,7 @@ jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin"
 jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson-version" }
 picocli = { module = "info.picocli:picocli", version = "4.7.6" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.8.1" }
-shelly = { module = "at.robert.shelly-api:shelly-api", version = "0.4.0" }
+shelly = { module = "at.robert.shelly-api:shelly-api", version = "0.4.1" }
 ktor-server-jvm = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version"}
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor-version"}
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version"}
