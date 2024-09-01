@@ -2,7 +2,6 @@
 kotlin-version = "2.0.20"
 jackson-version = "2.17.2"
 ktor-version = "2.3.12"
-exposed-version = "0.54.0"
 
 [libraries]
 junit5 = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.0" }
@@ -18,15 +17,12 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "k
 ktor-server-html = { module = "io.ktor:ktor-server-html-builder-jvm", version.ref = "ktor-version"}
 ktor-server-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor-version"}
 kotlin-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version = "0.11.0"}
-exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
 h2 = { module = "com.h2database:h2", version = "2.3.232" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.7" }
 
 [bundles]
 junit = ["junit5", "kotlin-test-junit5"]
 ktor-server = ["ktor-server-jvm", "ktor-server-config-yaml", "ktor-server-netty", "ktor-server-html", "logback-classic", "ktor-server-status"]
-exposed = ["exposed-core", "exposed-jdbc", "h2"]
 
 [plugins]
 jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

@@ -24,7 +24,6 @@ java {
 dependencies {
     implementation(project(":base"))
     implementation(libs.bundles.ktor.server)
-    implementation(libs.bundles.exposed)
     implementation(libs.shelly)
 }
 
