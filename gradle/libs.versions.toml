@@ -4,7 +4,7 @@ jackson-version = "2.18.1"
 ktor-version = "2.3.13"
 
 [libraries]
-junit5 = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.0" }
+junit5 = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.1" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin-version" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson-version" }
 jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson-version" }
