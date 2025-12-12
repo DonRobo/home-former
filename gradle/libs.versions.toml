@@ -27,4 +27,4 @@ ktor-server = ["ktor-server-jvm", "ktor-server-config-yaml", "ktor-server-netty"
 [plugins]
 jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
-jib = { id = "com.google.cloud.tools.jib", version = "3.4.4" }
+jib = { id = "com.google.cloud.tools.jib", version = "3.5.2" }
